@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Splitting MMR: what does it cost?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6F7; --panel:#FFFFFF; --ink:#13232B; --muted:#5A6B73; --rule:#D5DEE2;
+  --me:#B4232F; --mum:#2F6E8F; --ru:#8C7A2B; --coform:#13232B; --accent:#B4232F;
+  --good:#2C6B4A; --warnbg:#FBEDEE; --input:#FFFFFF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F181D; --panel:#16232A; --ink:#E4ECEF; --muted:#94A6AE; --rule:#2A3A42;
+    --me:#E0646E; --mum:#6FAFD0; --ru:#CDB65A; --coform:#E4ECEF; --accent:#E0646E;
+    --good:#6FC199; --warnbg:#3A1F23; --input:#0F181D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F181D; --panel:#16232A; --ink:#E4ECEF; --muted:#94A6AE; --rule:#2A3A42;
+  --me:#E0646E; --mum:#6FAFD0; --ru:#CDB65A; --coform:#E4ECEF; --accent:#E0646E;
+  --good:#6FC199; --warnbg:#3A1F23; --input:#0F181D;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 20px 48px}
+header h1{font-family:"Newsreader",Georgia,"Times New Roman",serif;font-weight:600;font-size:clamp(28px,4vw,42px);line-height:1.1;margin:0 0 8px;letter-spacing:-.01em}
+header p{margin:0;max-width:68ch;color:var(--muted)}
+.layout{display:grid;grid-template-columns:330px 1fr;gap:24px;margin-top:28px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+aside{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:18px 18px 8px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+@media (max-width:900px){aside{position:static}}
+aside h2{font-size:15px;font-weight:600;margin:0}
+.aside-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+button{font:inherit;font-size:13px;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+fieldset{border:0;border-top:1px solid var(--rule);margin:12px 0 0;padding:10px 0 4px}
+legend{font-size:13px;font-weight:600;color:var(--muted);padding:0 6px 0 0}
+.field{display:grid;grid-template-columns:1fr 78px;gap:4px 10px;align-items:center;margin:8px 0 12px}
+.field label{font-size:13.5px}
+.field input[type=number]{width:100%;font:inherit;font-size:14px;text-align:right;padding:4px 6px;border:1px solid var(--rule);border-radius:5px;background:var(--input);color:var(--ink);font-variant-numeric:tabular-nums}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:0}
+.unit{font-size:12px;color:var(--muted);grid-column:1/-1;margin-top:-4px}
+.changed label{font-weight:600}
+.field.invalid input[type=number]{border-color:var(--accent);background:var(--warnbg)}
+.field .err{grid-column:1/-1;font-size:12px;color:var(--accent);margin-top:-2px}
+.field .err:empty{display:none}
+.stale #chart,.stale #results{opacity:.35;transition:opacity .15s}
+@media (prefers-reduced-motion:reduce){.stale #chart,.stale #results{transition:none}}
+main{min-width:0}
+.hero{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:24px 26px;display:grid;grid-template-columns:auto 1fr;gap:10px 28px;align-items:center}
+@media (max-width:600px){.hero{grid-template-columns:1fr}}
+.big{font-family:"Newsreader",Georgia,serif;font-size:clamp(56px,9vw,92px);line-height:.9;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+.hero h2{font-family:"Newsreader",Georgia,serif;font-weight:600;font-size:22px;line-height:1.25;margin:0 0 6px}
+.hero p{margin:0;color:var(--muted);max-width:60ch}
+.hero .sub{margin-top:8px;font-size:13.5px}
+.hero .be{grid-column:1/-1;margin:8px 0 0;padding-top:14px;border-top:1px solid var(--rule);color:var(--ink);max-width:none}
+section.card{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:20px 22px;margin-top:20px}
+section.card h3{font-family:"Newsreader",Georgia,serif;font-weight:600;font-size:20px;margin:0 0 4px}
+section.card .note{color:var(--muted);font-size:13.5px;margin:0 0 14px;max-width:72ch}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:8px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--c);vertical-align:-1px}
+#chart svg{display:block;width:100%;height:auto}
+.scroll{overflow-x:auto}
+.picker{margin:0 0 12px;font-size:14px}
+.picker select{font:inherit;font-size:14px;color:var(--ink);background:var(--input);border:1px solid var(--rule);border-radius:5px;padding:4px 8px;margin-left:6px}
+table{min-width:560px!important}
+table{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-weight:600;font-size:13px;color:var(--muted);vertical-align:bottom}
+thead th.coform{color:var(--ink)}
+td.coform{background:color-mix(in srgb,var(--ink) 5%,transparent);font-weight:600}
+tbody tr.group td{font-weight:600;color:var(--muted);font-size:12.5px;padding-top:14px;border-bottom:0;text-align:left}
+td.over{color:var(--accent)}
+td.best{box-shadow:inset 0 -2px 0 var(--good)}
+tr.total td{font-weight:600;border-top:2px solid var(--ink)}
+.schedule{font-weight:400;font-size:11.5px;display:block;color:var(--muted)}
+footer{margin-top:24px;color:var(--muted);font-size:13px;max-width:80ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>What does it cost to split MMR?</h1>
+  <p>Compare the two-visit, coformulated MMR schedule with all 30 five-visit schedules that give measles, mumps, and rubella vaccines separately. Base-case uptake and attrition are the same for both, but each can be set separately for sensitivity analysis. Change any assumption on the left; every result updates instantly.</p>
+</header>
+
+<div class="layout">
+<aside aria-label="Model inputs">
+  <div class="aside-head"><h2>Assumptions</h2><button id="reset" type="button">Reset to base case</button></div>
+  <div id="inputs"></div>
+</aside>
+
+<main>
+  <div class="hero" aria-live="polite">
+    <div class="big" id="tl">–</div>
+    <div>
+      <h2 id="tl-head">Break-even mortality of the coformulated vaccine</h2>
+      <p id="tl-text"></p>
+      <p class="sub" id="tl-dose"></p>
+    </div>
+    <p class="be" id="be"></p>
+  </div>
+
+  <section class="card">
+    <h3>Lifetime mortality risk</h3>
+    <p class="note">Deaths per 100,000 children, by schedule and disease. Coformulation appears first; the 30 split schedules follow, ranked from fewest to most deaths. The best split schedule is named in green.</p>
+    <div class="legend"><span style="--c:var(--me)">Measles</span><span style="--c:var(--mum)">Mumps</span><span style="--c:var(--ru)">Rubella</span></div>
+    <div id="chart"></div>
+  </section>
+
+  <section class="card">
+    <h3>Results by schedule</h3>
+    <p class="note">Each split schedule gives five doses — two of measles, two of mumps, and one of rubella — at five visits, in the order its name lists them, with every second dose after the first. Thirty such schedules exist. The table compares coformulation with the best and worst split schedules and with any split schedule you choose. Effective reproductive numbers above 1 appear in red.</p>
+    <div class="picker"><label for="pick">Your pick:</label> <select id="pick"></select></div>
+    <div class="scroll"><table id="results"></table></div>
+  </section>
+
+  <footer>
+    Fraction ever infected uses the endemic-equilibrium result <i>s</i> − 1/R₀, floored at zero, where <i>s</i> is effective population susceptibility. Break-even mortality equals mortality under the best split schedule minus mortality under coformulation. Break-even uptake is the visit 1 uptake the split schedules would need for the best of them to match a coformulated vaccine, holding every other assumption fixed.
+  </footer>
+</main>
+</div>
+
+<script>
+const INPUTS = [
+  {group:"Coformulated schedule", items:[
+    {id:"uc", label:"Visit 1 uptake", def:92, min:50, max:100, step:1, unit:"% of children", hmin:0, hmax:100},
+    {id:"ac", label:"Attrition, visit 1 → 2", def:13, min:0, max:50, step:1, unit:"% of attendees lost", hmin:0, hmax:100}]},
+  {group:"Split schedules", items:[
+    {id:"us", label:"Visit 1 uptake", def:92, min:50, max:100, step:1, unit:"% of children", hmin:0, hmax:100},
+    {id:"a1", label:"Attrition, visit 1 → 2", def:13, min:0, max:50, step:1, unit:"% of attendees lost", hmin:0, hmax:100},
+    {id:"a2", label:"Attrition, visit 2 → 3", def:13, min:0, max:50, step:1, unit:"% of attendees lost", hmin:0, hmax:100},
+    {id:"a3", label:"Attrition, visit 3 → 4", def:13, min:0, max:50, step:1, unit:"% of attendees lost", hmin:0, hmax:100},
+    {id:"a4", label:"Attrition, visit 4 → 5", def:13, min:0, max:50, step:1, unit:"% of attendees lost", hmin:0, hmax:100}]},
+  {group:"Basic reproductive number (R₀)", items:[
+    {id:"R_me", label:"Measles", def:15, min:5, max:25, step:0.5, hmin:0.01, hmax:100},
+    {id:"R_ru", label:"Rubella", def:6.5, min:2, max:15, step:0.5, hmin:0.01, hmax:100},
+    {id:"R_mu", label:"Mumps", def:5.5, min:2, max:15, step:0.5, hmin:0.01, hmax:100}]},
+  {group:"Vaccine efficacy", items:[
+    {id:"ve_me1", label:"Measles, 1 dose", def:93, min:50, max:100, step:1, unit:"%", hmin:0, hmax:100},
+    {id:"ve_me2", label:"Measles, 2 doses", def:97, min:50, max:100, step:1, unit:"%", hmin:0, hmax:100},
+    {id:"ve_ru",  label:"Rubella, 1 dose", def:97, min:50, max:100, step:1, unit:"%", hmin:0, hmax:100},
+    {id:"ve_mu1", label:"Mumps, 1 dose", def:72, min:30, max:100, step:1, unit:"%", hmin:0, hmax:100},
+    {id:"ve_mu2", label:"Mumps, 2 doses", def:86, min:30, max:100, step:1, unit:"%", hmin:0, hmax:100}]},
+  {group:"Deaths per 100,000 infections", items:[
+    {id:"f_me", label:"Measles", def:200, min:0, max:1000, step:10, hmin:0, hmax:100000},
+    {id:"f_ru", label:"Rubella, deaths or CRS cases", def:0, min:0, max:200, step:1, unit:"Each congenital rubella syndrome case counts as a death", hmin:0, hmax:100000},
+    {id:"f_mu", label:"Mumps", def:10, min:0, max:100, step:1, hmin:0, hmax:100000}]}
+];
+
+const STRATS = (()=>{
+  const AB={me1:"Me",me2:"Me",mu1:"Mu",mu2:"Mu",ru:"R"};
+  const name=o=>o.map(d=>AB[d]).join("/");
+  const first6=[["me1","ru","mu1","me2","mu2"],["me1","mu1","ru","me2","mu2"],["ru","me1","mu1","me2","mu2"],
+                ["ru","mu1","me1","mu2","me2"],["mu1","me1","ru","mu2","me2"],["mu1","ru","me1","mu2","me2"]];
+  const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms([...a.slice(0,i),...a.slice(i+1)]).map(p=>[x,...p]));
+  const L=["me1","me2","mu1","mu2","ru"];
+  const key=o=>o.join(",");
+  const seen=new Set(first6.map(key));
+  const LBL={me1:"Me1",me2:"Me2",mu1:"Mum1",mu2:"Mum2",ru:"Ru"};
+  const rest=perms(L).filter(o=>o.indexOf("me1")<o.indexOf("me2")&&o.indexOf("mu1")<o.indexOf("mu2")&&!seen.has(key(o)))
+    .sort((a,b)=>{const A=a.map(d=>LBL[d]).join(" "),B=b.map(d=>LBL[d]).join(" ");return A<B?-1:A>B?1:0;});
+  return [{name:"Coformulated",coform:true}, ...[...first6,...rest].map(o=>({name:name(o),order:o}))];
+})();
+
+const state = {};
+const host = document.getElementById("inputs");
+INPUTS.forEach(g=>{
+  const fs=document.createElement("fieldset");
+  fs.innerHTML=`<legend>${g.group}</legend>`;
+  g.items.forEach(it=>{
+    state[it.id]=it.def;
+    const d=document.createElement("div"); d.className="field"; d.id="f_"+it.id;
+    d.innerHTML=`<label for="n_${it.id}">${it.label}</label>
+      <input type="number" id="n_${it.id}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.def}">
+      <input type="range" id="r_${it.id}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.def}" aria-label="${it.label}">
+      ${it.unit?`<div class="unit">${it.unit}</div>`:""}
+      <div class="err" id="e_${it.id}" aria-live="polite"></div>`;
+    fs.appendChild(d);
+    const n=d.querySelector("input[type=number]"), r=d.querySelector("input[type=range]");
+    const err=d.querySelector(".err");
+    const set=(v,src)=>{
+      if(v===""||isNaN(+v)){ err.textContent="Enter a number."; d.classList.add("invalid"); return; }
+      v=+v;
+      if(v<it.hmin||v>it.hmax){
+        err.textContent=`Enter a value from ${it.hmin} to ${it.hmax.toLocaleString("en-US")}.`;
+        d.classList.add("invalid"); return; }
+      err.textContent=""; d.classList.remove("invalid");
+      state[it.id]=v;
+      if(src!==n) n.value=v; if(src!==r) r.value=Math.min(Math.max(v,it.min),it.max);
+      d.classList.toggle("changed", v!==it.def); compute(); };
+    n.addEventListener("input",()=>set(n.value,n));
+    n.addEventListener("change",()=>{ if(d.classList.contains("invalid")){
+      const v=isNaN(+n.value)||n.value===""?state[it.id]:Math.min(Math.max(+n.value,it.hmin),it.hmax);
+      n.value=v; set(v,null);} });
+    r.addEventListener("input",()=>set(r.value,r));
+    it.set=v=>set(v,null);
+  });
+  host.appendChild(fs);
+});
+document.getElementById("reset").addEventListener("click",()=>INPUTS.forEach(g=>g.items.forEach(it=>it.set(it.def))));
+
+function model(p){
+  const att=[p.a1,p.a2,p.a3,p.a4].map(x=>x/100);
+  const chain=u=>{const v=[u]; for(let i=0;i<4;i++) v.push(v[i]*(1-att[i])); return v;};
+  const vs=chain(p.us/100), vc=[p.uc/100, p.uc/100*(1-p.ac/100)];
+  const ve={me1:p.ve_me1/100,me2:p.ve_me2/100,ru:p.ve_ru/100,mu1:p.ve_mu1/100,mu2:p.ve_mu2/100};
+  const R={me:p.R_me,ru:p.R_ru,mu:p.R_mu};
+  const ifr={me:p.f_me/1e5,ru:p.f_ru/1e5,mu:p.f_mu/1e5};
+  return STRATS.map(st=>{
+    let c;
+    if(st.coform) c={me1:vc[0],ru:vc[0],mu1:vc[0],me2:vc[1],mu2:vc[1]};
+    else { c={}; st.order.forEach((d,i)=>c[d]=vs[i]); }
+    const s={
+      me:(1-c.me1)+(c.me1-c.me2)*(1-ve.me1)+c.me2*(1-ve.me2),
+      ru:(1-c.ru)+c.ru*(1-ve.ru),
+      mu:(1-c.mu1)+(c.mu1-c.mu2)*(1-ve.mu1)+c.mu2*(1-ve.mu2)};
+    const out={s,Re:{},z:{},m:{}};
+    for(const d of ["me","ru","mu"]){
+      out.Re[d]=s[d]*R[d];
+      out.z[d]=Math.max(0,s[d]-1/R[d]);
+      out.m[d]=out.z[d]*ifr[d]*1e5;
+    }
+    out.total=out.m.me+out.m.ru+out.m.mu;
+    out.mmrDoses=vc[0]+vc[1];
+    out.c=c; out.completion=st.coform?vc[1]:vs[4];
+    return out;
+  });
+}
+
+function breakEvenUptake(p){
+  const gap=us=>{const r=model({...p,us}); return Math.min(...r.slice(1).map(x=>x.total))-r[0].total;};
+  if(gap(p.uc)<=0) return {u:p.uc, at:true};
+  if(gap(100)>0) return {u:null};
+  let lo=p.uc, hi=100;
+  for(let i=0;i<60;i++){const m=(lo+hi)/2; if(gap(m)>0) lo=m; else hi=m;}
+  return {u:hi};
+}
+const fmt=(x,d)=>x.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=x=>fmt(x*100,1)+"%";
+
+function checks(p){
+  const bad=[];
+  if(p.ve_me2<p.ve_me1) bad.push(["ve_me2","Two-dose efficacy can't be lower than one-dose efficacy."]);
+  if(p.ve_mu2<p.ve_mu1) bad.push(["ve_mu2","Two-dose efficacy can't be lower than one-dose efficacy."]);
+  return bad;
+}
+function compute(){
+  document.querySelectorAll(".field").forEach(f=>{ if(f.dataset.rule){ f.classList.remove("invalid"); f.querySelector(".err").textContent=""; delete f.dataset.rule; } });
+  const bad=checks(state);
+  const main=document.querySelector("main");
+  if(bad.length){
+    bad.forEach(([id,msg])=>{ const f=document.getElementById("f_"+id); f.dataset.rule="1"; f.classList.add("invalid"); f.querySelector(".err").textContent=msg; });
+    document.getElementById("tl").textContent="–";
+    document.getElementById("tl-text").textContent="Fix the highlighted assumption to see results. A second dose adds protection, so two-dose efficacy must be at least as high as one-dose efficacy.";
+    document.getElementById("tl-dose").textContent="";
+    main.classList.add("stale"); return;
+  }
+  main.classList.remove("stale");
+  const r=model(state);
+  const split=r.slice(1);
+  const bestIdx=1+split.reduce((bi,x,i)=>x.total<split[bi].total?i:bi,0);
+  const tl=r[bestIdx].total-r[0].total;
+  const big=document.getElementById("tl");
+  big.textContent=fmt(tl,2);
+  if(tl>=0){
+    document.getElementById("tl-text").innerHTML=`deaths per 100,000 children. Deaths attributable to coformulation would have to exceed this number before the safest split schedule, <b>${STRATS[bestIdx].name}</b>, saved more lives.`;
+    document.getElementById("tl-dose").textContent= r[0].mmrDoses>0 ? `Equivalent to ${fmt(tl/r[0].mmrDoses,2)} deaths per 100,000 coformulated doses, at ${fmt(r[0].mmrDoses,2)} doses per child.` : "";
+  } else {
+    document.getElementById("tl-text").innerHTML=`deaths per 100,000 children. With these uptake and attrition assumptions, the <b>${STRATS[bestIdx].name}</b> split schedule saves more lives than coformulation, even if the combined vaccine is perfectly safe.`;
+    document.getElementById("tl-dose").textContent="";
+  }
+  const be=breakEvenUptake(state), beEl=document.getElementById("be");
+  if(be.u===null) beEl.innerHTML=`<b>No break-even uptake.</b> Even with 100% visit 1 uptake, every split schedule causes more deaths than coformulation at ${fmt(state.uc,0)}% uptake.`;
+  else if(be.at && state.us<=state.uc) beEl.innerHTML=`<b>Break-even uptake: ${fmt(be.u,1)}%.</b> At these assumptions, split schedules match coformulation without any gain in uptake.`;
+  else beEl.innerHTML=`<b>Break-even uptake: ${fmt(be.u,1)}%.</b> Split schedules would need to raise visit 1 uptake from ${fmt(state.uc,0)}% to ${fmt(be.u,1)}% — ${fmt(be.u-state.uc,1)} percentage points — just to match a perfectly safe coformulated vaccine.`;
+  const worstIdx=1+split.reduce((wi,x,i)=>x.total>split[wi].total?i:wi,0);
+  drawChart(r,bestIdx); drawTable(r,bestIdx,worstIdx);
+}
+
+function drawChart(r,best){
+  const idx=[0,...r.map((_,i)=>i).slice(1).sort((a,b)=>r[a].total-r[b].total)];
+  const W=760,rowH=22,left=130,right=60,top=4,H=top+idx.length*rowH+30;
+  const max=Math.max(...r.map(x=>x.total),1e-9);
+  const nice=niceMax(max), sc=(W-left-right)/nice;
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Lifetime deaths per 100,000 children, coformulation and all 30 split schedules ranked">`;
+  for(let k=0;k<=4;k++){const v=nice*k/4,x=left+v*sc;
+    g+=`<line x1="${x}" x2="${x}" y1="${top}" y2="${H-24}" stroke="var(--rule)"/>`+
+       `<text x="${x}" y="${H-8}" font-size="12" fill="var(--muted)" text-anchor="middle">${fmt(v,v<10&&nice<20?1:0)}</text>`;}
+  idx.forEach((i,row)=>{
+    const x=r[i], y=top+row*rowH+4, h=rowH-8; let cx=left;
+    const strong=i===0||i===best;
+    if(row===1) g+=`<line x1="8" x2="${W-8}" y1="${y-4}" y2="${y-4}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+    g+=`<text x="${left-10}" y="${y+h/2+4}" font-size="12" font-weight="${strong?600:400}" fill="${i===best?"var(--good)":"var(--ink)"}" text-anchor="end">${STRATS[i].name}</text>`;
+    [["me","var(--me)"],["mu","var(--mum)"],["ru","var(--ru)"]].forEach(([d,c])=>{
+      const w=x.m[d]*sc; if(w>0){g+=`<rect x="${cx}" y="${y}" width="${w}" height="${h}" fill="${c}"><title>${STRATS[i].name}: ${d==="me"?"measles":d==="mu"?"mumps":"rubella"} ${fmt(x.m[d],2)}</title></rect>`; cx+=w;}
+    });
+    g+=`<text x="${cx+6}" y="${y+h/2+4}" font-size="11.5" font-weight="${strong?600:400}" fill="var(--ink)">${fmt(x.total,1)}</text>`;
+  });
+  document.getElementById("chart").innerHTML=g+"</svg>";
+}
+function niceMax(v){const e=Math.pow(10,Math.floor(Math.log10(v)));for(const m of [1,2,2.5,5,10]) if(m*e>=v) return m*e; return 10*e;}
+
+let pickIdx=STRATS.findIndex(x=>x.name==="Me/Mu/R/Me/Mu");
+(()=>{const sel=document.getElementById("pick");
+  STRATS.slice(1).forEach((x,k)=>{const o=document.createElement("option");o.value=k+1;o.textContent=x.name;sel.appendChild(o);});
+  sel.value=pickIdx; sel.addEventListener("change",()=>{pickIdx=+sel.value;compute();});})();
+function drawTable(r,best,worst){
+  const cols=[[0,"Coformulated","2 visits"],[best,STRATS[best].name,"Best split"],[worst,STRATS[worst].name,"Worst split"],[pickIdx,STRATS[pickIdx].name,"Your pick"]];
+  const head=`<thead><tr><th></th>${cols.map(([i,n,t],k)=>`<th class="${k===0?"coform":""}">${n}<span class="schedule">${t}</span></th>`).join("")}</tr></thead>`;
+  const D=[["me","Measles"],["mu","Mumps"],["ru","Rubella"]];
+  const cell=(k,txt,extra="")=>`<td class="${k===0?"coform ":""}${extra}">${txt}</td>`;
+  let b="<tbody>";
+  const grp=t=>{b+=`<tr class="group"><td colspan="${cols.length+1}">${t}</td></tr>`;};
+  const line=(lab,fn,cls="")=>{b+=`<tr class="${cls}"><td>${lab}</td>${cols.map(([i],k)=>fn(r[i],k,i)).join("")}</tr>`;};
+  grp("Antigen coverage, % of children");
+  [["me1","Measles, dose 1"],["me2","Measles, dose 2"],["mu1","Mumps, dose 1"],["mu2","Mumps, dose 2"],["ru","Rubella"]]
+    .forEach(([d,lab])=>line(lab,(x,k)=>cell(k,pct(x.c[d]))));
+  line("Series completion",(x,k)=>cell(k,pct(x.completion)),"total");
+  const block=(title,fn)=>{grp(title); D.forEach(([d,n])=>line(n,(x,k)=>fn(x,d,k)));};
+  block("Effective population susceptibility",(x,d,k)=>cell(k,pct(x.s[d])));
+  block("Effective reproductive number",(x,d,k)=>cell(k,fmt(x.Re[d],2),x.Re[d]>1?"over":""));
+  block("Fraction ever infected",(x,d,k)=>cell(k,pct(x.z[d])));
+  block("Lifetime mortality risk per 100,000 children",(x,d,k)=>cell(k,fmt(x.m[d],2)));
+  line("Total deaths",(x,k)=>cell(k,fmt(x.total,2),k===1?"best":""),"total");
+  document.getElementById("results").innerHTML=head+b+"</tbody>";
+}
+compute();
+</script>
+</body>
+</html>
