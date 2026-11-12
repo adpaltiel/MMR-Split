@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Splitting MMR: what does it cost?</title>
+<title>Comparing Coformulated and Split MMR Vaccine Schedules</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,6 +33,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Public Sans",
 .wrap{max-width:1240px;margin:0 auto;padding:28px 20px 48px}
 header h1{font-family:"Newsreader",Georgia,"Times New Roman",serif;font-weight:600;font-size:clamp(28px,4vw,42px);line-height:1.1;margin:0 0 8px;letter-spacing:-.01em}
 header p{margin:0;max-width:68ch;color:var(--muted)}
+header p.subtitle{font-family:"Newsreader",Georgia,"Times New Roman",serif;font-style:italic;font-size:clamp(17px,2.2vw,21px);color:var(--ink);margin:0 0 12px}
 .layout{display:grid;grid-template-columns:330px 1fr;gap:24px;margin-top:28px;align-items:start}
 @media (max-width:900px){.layout{grid-template-columns:1fr}}
 aside{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:18px 18px 8px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
@@ -72,7 +73,11 @@ section.card .note{color:var(--muted);font-size:13.5px;margin:0 0 14px;max-width
 .scroll{overflow-x:auto}
 .picker{margin:0 0 12px;font-size:14px}
 .picker select{font:inherit;font-size:14px;color:var(--ink);background:var(--input);border:1px solid var(--rule);border-radius:5px;padding:4px 8px;margin-left:6px}
-table{min-width:560px!important}
+table{min-width:640px!important}
+#results{table-layout:fixed}
+#results th:first-child{width:24%}
+#results thead th{white-space:normal;vertical-align:bottom}
+#results thead th .schedule{white-space:normal;line-height:1.3;margin-top:2px}
 table{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums;font-size:14px}
 th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
@@ -85,12 +90,15 @@ td.best{box-shadow:inset 0 -2px 0 var(--good)}
 tr.total td{font-weight:600;border-top:2px solid var(--ink)}
 .schedule{font-weight:400;font-size:11.5px;display:block;color:var(--muted)}
 footer{margin-top:24px;color:var(--muted);font-size:13px;max-width:80ch}
+footer h3.about{font-family:"Newsreader",Georgia,serif;font-weight:600;font-size:17px;color:var(--ink);margin:22px 0 4px}
+footer p{margin:0}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>What does it cost to split MMR?</h1>
+  <h1>Comparing Coformulated and Split MMR Vaccine Schedules</h1>
+  <p class="subtitle">An interactive companion to Paltiel &amp; Walensky (2026)</p>
   <p>Compare the two-visit, coformulated MMR schedule with all 30 five-visit schedules that give measles, mumps, and rubella vaccines separately. Base-case uptake and attrition are the same for both, but each can be set separately for sensitivity analysis. Change any assumption on the left; every result updates instantly.</p>
 </header>
 
@@ -113,20 +121,22 @@ footer{margin-top:24px;color:var(--muted);font-size:13px;max-width:80ch}
 
   <section class="card">
     <h3>Lifetime mortality risk</h3>
-    <p class="note">Deaths per 100,000 children, by schedule and disease. Coformulation appears first; the 30 split schedules follow, ranked from fewest to most deaths. The best split schedule is named in green.</p>
+    <p class="note">Deaths per 100,000 children, by schedule and disease. Coformulation appears first. Next come the 6 split schedules that give one dose of each antigen before any second dose, then the other 24 split schedules; each group is ranked from fewest to most deaths. The best of all 30 split schedules is named in green.</p>
     <div class="legend"><span style="--c:var(--me)">Measles</span><span style="--c:var(--mum)">Mumps</span><span style="--c:var(--ru)">Rubella</span></div>
     <div id="chart"></div>
   </section>
 
   <section class="card">
     <h3>Results by schedule</h3>
-    <p class="note">Each split schedule gives five doses — two of measles, two of mumps, and one of rubella — at five visits, in the order its name lists them, with every second dose after the first. Thirty such schedules exist. The table compares coformulation with the best and worst split schedules and with any split schedule you choose. Effective reproductive numbers above 1 appear in red.</p>
+    <p class="note">Each split schedule gives five doses — two of measles, two of mumps, and one of rubella — at five visits, in the order its name lists them, with every second dose after the first. Thirty such schedules exist. The table compares coformulation with the best and worst of all 30 split schedules and with any split schedule you choose. Effective reproductive numbers above 1 appear in red.</p>
     <div class="picker"><label for="pick">Your pick:</label> <select id="pick"></select></div>
     <div class="scroll"><table id="results"></table></div>
   </section>
 
   <footer>
     Fraction ever infected uses the endemic-equilibrium result <i>s</i> − 1/R₀, floored at zero, where <i>s</i> is effective population susceptibility. Break-even mortality equals mortality under the best split schedule minus mortality under coformulation. Break-even uptake is the visit 1 uptake the split schedules would need for the best of them to match a coformulated vaccine, holding every other assumption fixed.
+    <h3 class="about">About this dashboard</h3>
+    <p>This dashboard provides an interactive version of the model reported in Paltiel &amp; Walensky, “Estimated mortality of bundled vs split MMR vaccine schedules” (2026). It implements an analysis and reporting formats originally designed by the authors on a spreadsheet platform. Claude (Anthropic) translated the spreadsheet’s equations and reporting formats into this dashboard. The authors have verified that the dashboard reproduces the spreadsheet’s results for all 31 vaccination schedules under both base-case assumptions and a wide range of alternative parameter sets and scenarios. The dashboard contains no equations or inputs beyond those described in the main paper and its Technical Supplement.</p>
   </footer>
 </main>
 </div>
@@ -285,27 +295,40 @@ function compute(){
   else if(be.at && state.us<=state.uc) beEl.innerHTML=`<b>Break-even uptake: ${fmt(be.u,1)}%.</b> At these assumptions, split schedules match coformulation without any gain in uptake.`;
   else beEl.innerHTML=`<b>Break-even uptake: ${fmt(be.u,1)}%.</b> Split schedules would need to raise visit 1 uptake from ${fmt(state.uc,0)}% to ${fmt(be.u,1)}% — ${fmt(be.u-state.uc,1)} percentage points — just to match a perfectly safe coformulated vaccine.`;
   const worstIdx=1+split.reduce((wi,x,i)=>x.total>split[wi].total?i:wi,0);
-  drawChart(r,bestIdx); drawTable(r,bestIdx,worstIdx);
+  const best6Idx=[1,2,3,4,5,6].reduce((bi,i)=>r[i].total<r[bi].total?i:bi,1);
+  drawChart(r,bestIdx,best6Idx); drawTable(r,bestIdx,worstIdx,best6Idx);
 }
 
-function drawChart(r,best){
-  const idx=[0,...r.map((_,i)=>i).slice(1).sort((a,b)=>r[a].total-r[b].total)];
-  const W=760,rowH=22,left=130,right=60,top=4,H=top+idx.length*rowH+30;
+function drawChart(r,best,best6){
+  const byTotal=(a,b)=>r[a].total-r[b].total;
+  const six=[1,2,3,4,5,6].sort(byTotal);
+  const rest=r.map((_,i)=>i).slice(7).sort(byTotal);
+  const items=[{bar:0},{label:"Split schedules giving one dose of each antigen before any second dose"},...six.map(i=>({bar:i})),
+               {label:"All other split schedules"},...rest.map(i=>({bar:i}))];
+  const W=760,rowH=22,labH=26,left=130,right=60,top=4;
+  const H=top+items.reduce((h,it)=>h+(it.label?labH:rowH),0)+30;
   const max=Math.max(...r.map(x=>x.total),1e-9);
   const nice=niceMax(max), sc=(W-left-right)/nice;
-  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Lifetime deaths per 100,000 children, coformulation and all 30 split schedules ranked">`;
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Lifetime deaths per 100,000 children: coformulation, then the 6 split schedules giving one dose of each antigen first, then the other 24, each group ranked">`;
   for(let k=0;k<=4;k++){const v=nice*k/4,x=left+v*sc;
     g+=`<line x1="${x}" x2="${x}" y1="${top}" y2="${H-24}" stroke="var(--rule)"/>`+
        `<text x="${x}" y="${H-8}" font-size="12" fill="var(--muted)" text-anchor="middle">${fmt(v,v<10&&nice<20?1:0)}</text>`;}
-  idx.forEach((i,row)=>{
-    const x=r[i], y=top+row*rowH+4, h=rowH-8; let cx=left;
-    const strong=i===0||i===best;
-    if(row===1) g+=`<line x1="8" x2="${W-8}" y1="${y-4}" y2="${y-4}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+  let y0=top;
+  items.forEach(it=>{
+    if(it.label){
+      g+=`<rect x="0" y="${y0+2}" width="${W}" height="${labH-4}" fill="var(--bg)"/>`+
+         `<line x1="0" x2="${W}" y1="${y0+2}" y2="${y0+2}" stroke="var(--muted)" stroke-dasharray="3 3"/>`+
+         `<text x="8" y="${y0+labH/2+5}" font-size="12" font-weight="600" fill="var(--muted)">${it.label}</text>`;
+      y0+=labH; return;
+    }
+    const i=it.bar, x=r[i], y=y0+4, h=rowH-8; let cx=left;
+    const strong=i===0||i===best||i===best6;
     g+=`<text x="${left-10}" y="${y+h/2+4}" font-size="12" font-weight="${strong?600:400}" fill="${i===best?"var(--good)":"var(--ink)"}" text-anchor="end">${STRATS[i].name}</text>`;
     [["me","var(--me)"],["mu","var(--mum)"],["ru","var(--ru)"]].forEach(([d,c])=>{
       const w=x.m[d]*sc; if(w>0){g+=`<rect x="${cx}" y="${y}" width="${w}" height="${h}" fill="${c}"><title>${STRATS[i].name}: ${d==="me"?"measles":d==="mu"?"mumps":"rubella"} ${fmt(x.m[d],2)}</title></rect>`; cx+=w;}
     });
     g+=`<text x="${cx+6}" y="${y+h/2+4}" font-size="11.5" font-weight="${strong?600:400}" fill="var(--ink)">${fmt(x.total,1)}</text>`;
+    y0+=rowH;
   });
   document.getElementById("chart").innerHTML=g+"</svg>";
 }
@@ -315,7 +338,7 @@ let pickIdx=STRATS.findIndex(x=>x.name==="Me/Mu/R/Me/Mu");
 (()=>{const sel=document.getElementById("pick");
   STRATS.slice(1).forEach((x,k)=>{const o=document.createElement("option");o.value=k+1;o.textContent=x.name;sel.appendChild(o);});
   sel.value=pickIdx; sel.addEventListener("change",()=>{pickIdx=+sel.value;compute();});})();
-function drawTable(r,best,worst){
+function drawTable(r,best,worst,best6){
   const cols=[[0,"Coformulated","2 visits"],[best,STRATS[best].name,"Best split"],[worst,STRATS[worst].name,"Worst split"],[pickIdx,STRATS[pickIdx].name,"Your pick"]];
   const head=`<thead><tr><th></th>${cols.map(([i,n,t],k)=>`<th class="${k===0?"coform":""}">${n}<span class="schedule">${t}</span></th>`).join("")}</tr></thead>`;
   const D=[["me","Measles"],["mu","Mumps"],["ru","Rubella"]];
